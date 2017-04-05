@@ -1,0 +1,36 @@
+#Version 2 Docker Compose for buildlocalweb
+version: '2'
+services:
+  db:
+    #Pulls DB image
+    image: mariadb
+    restart: always
+    #Set DB Environment variables
+    environment:
+      MYSQL_ROOT_PASSWORD: the_db_root_password
+      MYSQL_USER: c5dbadmin
+      MYSQL_PASSWORD: the_db_user_password
+      MYSQL_DATABASE: c5db
+    networks:
+    - app
+    # volume that will be mounted onto host
+    volumes:
+    - ./var/lib/mysql:/var/lib/mysql
+  web:
+    #Pulls the Image i created in my Dockerfile
+    image: aaronstark/buildlocalweb-v2
+    restart: always
+    ports:
+    - "80:80"
+    #link this container to our DB service above
+    networks:
+    - app
+    #volumes:
+    #- ./etc/apache2:/etc/apache2
+    #- ./var/www/html:/var/www/html
+networks:
+ app:
+  driver: "bridge"
+volumes:
+ data:
+  driver: "local"
