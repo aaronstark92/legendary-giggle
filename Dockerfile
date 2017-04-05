@@ -11,8 +11,6 @@ RUN apt-get update && \
         php5-mysql && \
     apt-get clean && rm -r /var/lib/apt/lists/*
 
-ADD https://github.com/just-containers/s6-overlay/releases/download/v1.19.1.1/s6-overlay-amd64.tar.gz /tmp/
-RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C /
 
 ENV CONCRETE_VERSION 5.7.5.13
 ENV C5_URL http://www.concrete5.org/download_file/-/view/93075/
