@@ -14,37 +14,57 @@
 # # Perform other pre-build steps here
 #
 # END PRE-BUILD
-
-# Do we have a specific apache image?
-
-FROM chriswayg/apache-php
+FROM php:7.1-apache
 MAINTAINER asisk@starkartthenala.com
 
-RUN apt-get update && \
-        DEBIAN_FRONTEND=noninteractive apt-get -y install \
-        apt-utils \
-        unzip \
-        vim \
-        curl \
-        php5-mysql && \
-    apt-get clean && rm -r /var/lib/apt/lists/*
+# [Environment]
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TERM        xterm
+ENV NPROC       grep -c ^processor /proc/cpuinfo
 
+# Dependencies
+RUN apt-get update \
+        && apt-get -y install \
+        unzip \
+        #gd dependencies
+        libpng12-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
+        # curl dependencies
+        libcurl4-gnutls-dev \
+        # mcrypt dependencies
+        libmcrypt-dev \
+        vim \
+        # [Apt Cleanup]
+        && apt-get clean && rm -r /var/lib/apt/lists/*
+
+# Extensions
+RUN docker-php-source extract \
+ && docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
+ && docker-php-ext-install gd \
+        curl \
+        mbstring \
+        mysqli \
+        pdo_mysql
+
+# [s6-overlay]
 ADD https://github.com/just-containers/s6-overlay/releases/download/v1.19.1.1/s6-overlay-amd64.tar.gz /tmp/
 RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C /
 
+# [CONCRETE VERSION & SOURCE]
 ENV CONCRETE_VERSION 5.7.5.13
 ENV C5_URL http://www.concrete5.org/download_file/-/view/93075/
-ENV TERM xterm
 
+#  [Concrete5]
 RUN cd /usr/local/src \
         && curl -o concrete5.zip -SL $C5_URL \
         && unzip concrete5.zip \
         && rm -v concrete5.zip \
-        && rm -v /var/www/html/index.html \
         && cp -r /usr/local/src/concrete$CONCRETE_VERSION/* /var/www/html \
-        && chmod -Rv 777 /var/www/html/* \
+        && cp && chmod -Rv 777 /var/www/html/* \
         && chown -Rv root:www-data /var/www/html/*
 
+# s6 Process Manager Config
 COPY apps/s6-overlay/cont-init.d /etc/cont-init.d
 COPY apps/s6-overlay/services.d /etc/services.d
 
