@@ -1,0 +1,47 @@
+#Version 2 Docker Compose for buildlocalweb
+version: '2'
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+    - "80:80"
+    - "443:443"
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - /etc/timezone:/etc/timezone:ro
+
+    - ./apps/config/nginx:/etc/nginx/conf.d:ro
+    - data:/var/www/html:ro
+    networks:
+    - app
+  db:
+    #Pulls DB image
+    image: mariadb
+    #Set DB Environment variables
+    environment:
+      MYSQL_ROOT_PASSWORD: the_db_root_password
+      MYSQL_USER: c5dbadmin
+      MYSQL_PASSWORD: the_db_user_password
+      MYSQL_DATABASE: c5db
+    networks:
+     - app
+  web:
+    #Pulls the Image created in my Dockerfile
+    image: aaronstark/buildlocalweb-v3
+    volumes:
+     - /etc/localtime:/etc/localtime:ro
+     - /etc/timezone:/etc/localtime:ro
+
+     - data:/var/www/html:rw
+    environment:
+      THEME: scribble
+      MYSQL_PASS: the_db_user_password
+      MYSQL_USER: c5dbadmin
+      MYSQL_DATABASE: c5db
+    networks:
+     - app
+networks:
+ app:
+  driver: "bridge"
+volumes:
+ data:
