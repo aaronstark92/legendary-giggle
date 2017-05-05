@@ -15,7 +15,7 @@
 #
 # END PRE-BUILD
 
-FROM php:7.1-fpm
+FROM php:7.0-fpm
 MAINTAINER asisk@starkartthenala.com
 
 # [s6-overlay]
@@ -25,6 +25,7 @@ RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C /
 # [CONCRETE VERSION & SOURCE]
 ENV CONCRETE_VERSION 5.7.5.13
 ENV C5_URL http://www.concrete5.org/download_file/-/view/93075/
+ENV C5_HOME /var/www/html
 
 # [Environment]
 ARG DEBIAN_FRONTEND=noninteractive
@@ -63,7 +64,7 @@ RUN docker-php-source extract \
         curl \
         mbstring \
         mysqli \
-#       pdo_mysql \
+        pdo_mysql \
         openssl \
         opcache \
   && pecl install \
@@ -77,21 +78,19 @@ COPY apps/config/php/php.ini /etc/php/
 
 # FastCGI
 RUN ln -sf /dev/stderr /var/log/php-fpm.log
-COPY apps/config/php/php-fpm.conf /etc/php/fpm/
-COPY apps/config/php/pool.conf /etc/php/fpm/pool.d/
+COPY apps/config/php/php7-fpm.conf /usr/local/etc/php/php-fpm.conf
+COPY apps/config/php/pool.conf /usr/local/etc/php/php-fpm.d/www.conf
 
 #  [Apt Cleanup]
 RUN apt-get clean \
   && rm -rf /var/lib/apt/lists
 
 #  [Concrete5]
-RUN cd /usr/local/src \
-        && curl -o concrete5.zip -SL $C5_URL \
-        && unzip concrete5.zip \
-        && rm -v concrete5.zip \
-        && cp -r /usr/local/src/concrete$CONCRETE_VERSION/* /var/www/html \
-        && chmod -R 777 /var/www/html/* \
-        && chown -R www-data:www-data /var/www/html/*
+ADD $C5_URL /tmp/concrete5.zip
+RUN cd /tmp \
+ && unzip /tmp/concrete5.zip \
+ && rm /tmp/concrete5.zip
+
 
 # s6 Process Manager Config
 COPY apps/s6-overlay/services.d /etc/services.d
